@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../utils/Api';
+import { FaPlayCircle, FaLock, FaSignOutAlt } from 'react-icons/fa';
 
 const BuySection = ({ isLoggedIn, userEmail, onLogout }) => {
   const [hasPaid, setHasPaid] = useState(false);
@@ -7,11 +8,11 @@ const BuySection = ({ isLoggedIn, userEmail, onLogout }) => {
   const video = {
     id: '1',
     title: 'Bridal Makeup Course',
-    description: 'Glow Up with HydraFacial💆‍♀️| #hydrafacial | VJ Deepika',
+    description: 'Glow Up with HydraFacial 💆‍♀️ | #hydrafacial | VJ Deepika',
     preview: '/Videos/thumb3.jpg',
     price: 1,
     vimeoEmbedSrc:
-      "https://player.vimeo.com/video/1108798598?title=0&byline=0&portrait=0&badge=0&autopause=0&player_id=0&app_id=58479",
+      "https://player.vimeo.com/video/1108798598?title=0&byline=0&portrait=0&badge=0&autopause=0",
   };
 
   useEffect(() => {
@@ -93,62 +94,69 @@ const BuySection = ({ isLoggedIn, userEmail, onLogout }) => {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold">{video.title}</h2>
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600"
-        >
-          Logout
-        </button>
-      </div>
-
-      {hasPaid ? (
-        // Vimeo iframe centered
-        <div className="flex justify-center">
-          <iframe
-            src={video.vimeoEmbedSrc}
-            width="100%"
-            height="480"
-            frameBorder="0"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-            title={video.title}
-            className="rounded-lg max-w-full"
-            style={{ maxWidth: '800px' }}
-          ></iframe>
-        </div>
-      ) : (
-        // Center preview image + description
-        <div className="flex flex-col items-center text-center space-y-4">
-          <img
-            src={video.preview}
-            alt="Video Preview"
-            width="640"
-            height="360"
-            className="object-cover rounded-lg shadow-lg"
-          />
-          <p className="text-gray-700 text-lg">{video.description}</p>
-        </div>
-      )}
-
-      {!hasPaid && isLoggedIn && (
-        <div className="flex justify-center mt-6">
+    <div className="flex flex-col items-center px-4 py-10">
+      <div className="max-w-4xl w-full bg-white/10 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-white/20">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-white drop-shadow-md">
+            {video.title}
+          </h2>
           <button
-            onClick={handleBuy}
-            className="bg-pink-500 text-white px-8 py-3 rounded hover:bg-pink-600 transition"
+            onClick={handleLogout}
+            className="flex items-center gap-2 bg-red-500/80 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition"
           >
-            Buy Now ₹{video.price}
+            <FaSignOutAlt /> Logout
           </button>
         </div>
-      )}
 
-      {!isLoggedIn && (
-        <p className="mt-6 text-center text-gray-600">
-          Please login to purchase or watch the full video.
-        </p>
-      )}
+        {/* Video Section */}
+        {hasPaid ? (
+          <div className="flex justify-center">
+            <iframe
+              src={video.vimeoEmbedSrc}
+              width="100%"
+              height="480"
+              frameBorder="0"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              title={video.title}
+              className="rounded-xl shadow-lg"
+              style={{ maxWidth: '900px' }}
+            ></iframe>
+          </div>
+        ) : (
+          <div className="relative group w-full flex flex-col items-center text-center space-y-4">
+            <img
+              src={video.preview}
+              alt="Video Preview"
+              className="object-cover rounded-xl shadow-lg border border-white/20 w-full max-w-3xl"
+            />
+            <div className="absolute inset-0 flex flex-col justify-center items-center bg-black/50 opacity-0 group-hover:opacity-100 transition">
+              <FaLock className="text-white text-5xl mb-2" />
+              <span className="text-white text-lg">Purchase to Unlock</span>
+            </div>
+            <p className="text-white/90 text-lg max-w-2xl">{video.description}</p>
+          </div>
+        )}
+
+        {/* Buy Button */}
+        {!hasPaid && isLoggedIn && (
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={handleBuy}
+              className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-8 py-3 rounded-full shadow-lg hover:scale-105 hover:shadow-pink-500/50 transition transform text-lg font-semibold"
+            >
+              <FaPlayCircle className="inline mr-2" /> Buy Now ₹{video.price}
+            </button>
+          </div>
+        )}
+
+        {!isLoggedIn && (
+          <p className="mt-6 text-center text-white/80">
+            Please login to purchase or watch the full video.
+          </p>
+        )}
+      </div>
     </div>
   );
 };
