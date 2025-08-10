@@ -3,14 +3,11 @@ import BuySection from './components/BuySection';
 import AuthModal from './components/AuthModal';
 import { FaWhatsapp, FaEnvelope } from 'react-icons/fa';
 
-// ===== NAVBAR =====
 function Navbar({ isLoggedIn, openLogin, onLogout }) {
   return (
-    <nav className="bg-transparent border-none py-4 px-6 flex items-center justify-center z-20 relative">
-      <div className="flex items-center gap-3">
-        {/* Optional logo */}
-        {/* <img src="logo.png" alt="Logo" className="w-10 h-10 object-contain" /> */}
-        <h1 className="text-xl md:text-2xl font-semibold text-white whitespace-nowrap drop-shadow-lg tracking-wide">
+    <nav className="bg-transparent border-none py-4 px-4 flex items-center justify-center z-20 relative">
+      <div className="flex items-center gap-3 text-center">
+        <h1 className="text-lg sm:text-xl md:text-2xl font-semibold text-white drop-shadow-lg tracking-wide break-words leading-tight max-w-full">
           𝒟𝓇. 𝒜𝓈𝒽𝒶 𝓆𝓊𝑒𝑒𝓃 | 𝓕𝓪𝓬𝓲𝓪𝓵 𝓐𝓮𝓼𝓽𝓱𝓮𝓽𝓲𝓬𝓼 & 𝓘𝓷𝓳𝓮𝓬𝓽𝓪𝓫𝓵𝓮𝓼
         </h1>
       </div>
