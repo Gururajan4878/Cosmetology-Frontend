@@ -12,8 +12,7 @@ function AuthModal({ onClose, onLogin }) {
   const [otp, setOtp] = useState(['', '', '', '', '', '']); 
   const [error, setError] = useState('');
   const [resetToken, setResetToken] = useState(''); 
-  const [isLoading, setIsLoading] = React.useState(false)
-  
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const isValidEmail = (email) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -63,13 +62,13 @@ function AuthModal({ onClose, onLogin }) {
       return false;
     }
     const passwordRegex =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
-  if (!passwordRegex.test(password)) {
-    setError(
-      'Password must include uppercase, lowercase, number, and special character.'
-    );
-    return;
-  }
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
+    if (!passwordRegex.test(password)) {
+      setError(
+        'Password must include uppercase, lowercase, number, and special character.'
+      );
+      return false;
+    }
     if (!isValidPassword(password)) {
       setError('Password contains invalid characters.');
       return false;
@@ -79,37 +78,21 @@ function AuthModal({ onClose, onLogin }) {
       return false;
     }
     if (password !== confirmPassword) {
-    setError('Passwords do not match');
-    return; // ❌ stop here, don't send OTP
-  }
+      setError('Passwords do not match');
+      return false;
+    }
     setError('');
     return true;
   };
 
+  // Simplified forgot validation - only mobile
   const validateForgot = () => {
-  if (!mobile.trim()) {
-    setError('Mobile number is required.');
-    return false;
-  }
-  if (!/^\d{10}$/.test(mobile)) {
-    setError('Mobile number must be exactly 10 digits.');
-    return false;
-  }
-  setError('');
-  return true;
-};
-
-  const validateResetPassword = () => {
-    if (!password.trim()) {
-      setError('Password is required.');
+    if (!mobile.trim()) {
+      setError('Mobile number is required.');
       return false;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return false;
-    }
-    if (!isValidPassword(password)) {
-      setError('Password contains invalid characters.');
+    if (!/^\d{10}$/.test(mobile)) {
+      setError('Mobile number must be exactly 10 digits.');
       return false;
     }
     setError('');
@@ -120,9 +103,12 @@ function AuthModal({ onClose, onLogin }) {
     if (!validateRegister()) return;
     try {
       setError('');
+      setIsLoading(true);
       await api.post('/auth/register-initiate', { email, password, mobile: '+91' + mobile });
+      setIsLoading(false);
       setStep('verify');
     } catch (err) {
+      setIsLoading(false);
       const msg = err.response?.data?.message || 'Registration failed';
       setError(msg);
     }
@@ -158,33 +144,34 @@ function AuthModal({ onClose, onLogin }) {
     }
   };
 
-  // ✅ Merged sendForgotPasswordOtp from your first code
+  // Forgot password send OTP (only mobile)
   const sendForgotPasswordOtp = async () => {
-  if (!validateForgot()) return;
-  try {
-    await api.post('/auth/forgot-password-phone', { mobile: '+91' + mobile });
-    alert('OTP sent to your mobile');
-    setStep('forgot-otp');
-    setOtp(['', '', '', '', '', '']);
-  } catch (err) {
-    const msg = err.response?.data?.message || 'Failed to send OTP';
-    setError(msg);
-  }
-};
+    if (!validateForgot()) return;
+    try {
+      await api.post('/auth/forgot-password-phone', { mobile: '+91' + mobile });
+      alert('OTP sent to your mobile');
+      setStep('forgot-otp');
+      setOtp(['', '', '', '', '', '']);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to send OTP';
+      setError(msg);
+    }
+  };
 
+  // Forgot password OTP verification (only mobile)
   const handleForgotVerifyOtp = async () => {
-  try {
-    const otpCode = otp.join('');
-    const res = await api.post('/auth/forgot-verify-phone-otp', { mobile: '+91' + mobile, otp: otpCode });
-    setResetToken(res.data.resetToken);
-    setStep('reset-password');
-    setPassword('');
-    setError('');
-  } catch (err) {
-    const msg = err.response?.data?.message || 'Invalid OTP';
-    setError(msg);
-  }
-};
+    try {
+      const otpCode = otp.join('');
+      const res = await api.post('/auth/forgot-verify-phone-otp', { mobile: '+91' + mobile, otp: otpCode });
+      setResetToken(res.data.resetToken);
+      setStep('reset-password');
+      setPassword('');
+      setError('');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Invalid OTP';
+      setError(msg);
+    }
+  };
 
   const handleResetPassword = async () => {
     if (!validateResetPassword()) return;
@@ -205,6 +192,23 @@ function AuthModal({ onClose, onLogin }) {
       const msg = err.response?.data?.message || 'Failed to reset password';
       setError(msg);
     }
+  };
+
+  const validateResetPassword = () => {
+    if (!password.trim()) {
+      setError('Password is required.');
+      return false;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return false;
+    }
+    if (!isValidPassword(password)) {
+      setError('Password contains invalid characters.');
+      return false;
+    }
+    setError('');
+    return true;
   };
 
   const handleOtpChange = (index, value) => {
@@ -287,7 +291,7 @@ function AuthModal({ onClose, onLogin }) {
                 New User? Register
               </button>
               <button
-                onClick={() => { setStep('forgot'); setEmail(''); setMobile(''); setError(''); }}
+                onClick={() => { setStep('forgot'); setMobile(''); setError(''); }}
                 className="underline"
               >
                 Forgot Password?
@@ -296,70 +300,70 @@ function AuthModal({ onClose, onLogin }) {
           </>
         )}
 
-{/* REGISTER */}
-{step === 'register' && (
-  <>
-    <input
-      type="email"
-      placeholder="Enter email"
-      value={email}
-      onChange={(e) => { setEmail(e.target.value); setError(''); }}
-      className="w-full p-2 mb-3 border border-gray-300 rounded"
-    />
-    <div className="flex items-center mb-3 border border-gray-300 rounded">
-      <span className="px-2 text-gray-600">+91</span>
-      <input
-        type="tel"
-        placeholder="Enter 10-digit mobile number"
-        maxLength={10}
-        value={mobile}
-        onChange={(e) => { let val = e.target.value.replace(/\D/g, '').slice(0, 10); setMobile(val); setError(''); }}
-        className="flex-1 p-2 border-none outline-none"
-      />
-    </div>
-    <input
-      type="password"
-      placeholder="Enter new password"
-      value={password}
-      onChange={(e) => { setPassword(e.target.value); setError(''); }}
-      className="w-full p-2 mb-3 border border-gray-300 rounded"
-    />
-    <input
-      type="password"
-      placeholder="Confirm password"
-      value={confirmPassword}
-      onChange={(e) => { setconfirmPassword(e.target.value); setError(''); }}
-      className="w-full p-2 mb-3 border border-gray-300 rounded"
-    />
+        {/* REGISTER */}
+        {step === 'register' && (
+          <>
+            <input
+              type="email"
+              placeholder="Enter email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setError(''); }}
+              className="w-full p-2 mb-3 border border-gray-300 rounded"
+            />
+            <div className="flex items-center mb-3 border border-gray-300 rounded">
+              <span className="px-2 text-gray-600">+91</span>
+              <input
+                type="tel"
+                placeholder="Enter 10-digit mobile number"
+                maxLength={10}
+                value={mobile}
+                onChange={(e) => { let val = e.target.value.replace(/\D/g, '').slice(0, 10); setMobile(val); setError(''); }}
+                className="flex-1 p-2 border-none outline-none"
+              />
+            </div>
+            <input
+              type="password"
+              placeholder="Enter new password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(''); }}
+              className="w-full p-2 mb-3 border border-gray-300 rounded"
+            />
+            <input
+              type="password"
+              placeholder="Confirm password"
+              value={confirmPassword}
+              onChange={(e) => { setconfirmPassword(e.target.value); setError(''); }}
+              className="w-full p-2 mb-3 border border-gray-300 rounded"
+            />
 
-    <button
-      onClick={handleRegister}
-      disabled={isLoading}
-      className={`w-full py-2 rounded text-white ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
-    >
-      {isLoading ? (
-        <span className="flex items-center justify-center">
-          <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-          </svg>
-          Verifying...
-        </span>
-      ) : (
-        'Register'
-      )}
-    </button>
+            <button
+              onClick={handleRegister}
+              disabled={isLoading}
+              className={`w-full py-2 rounded text-white ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                  </svg>
+                  Verifying...
+                </span>
+              ) : (
+                'Register'
+              )}
+            </button>
 
-    <div className="mt-4 text-center text-sm text-blue-600">
-      <button
-        onClick={() => { setStep('login'); setIdentifier(''); setPassword(''); setError(''); }}
-        className="underline"
-      >
-        Already have an account? Login
-      </button>
-    </div>
-  </>
-)}
+            <div className="mt-4 text-center text-sm text-blue-600">
+              <button
+                onClick={() => { setStep('login'); setIdentifier(''); setPassword(''); setError(''); }}
+                className="underline"
+              >
+                Already have an account? Login
+              </button>
+            </div>
+          </>
+        )}
 
         {/* VERIFY OTP */}
         {step === 'verify' && (
@@ -386,37 +390,33 @@ function AuthModal({ onClose, onLogin }) {
         )}
 
         {/* FORGOT PASSWORD */}
-{step === 'forgot' && (
-  <>
-    <div className="flex items-center mb-3 border border-gray-300 rounded">
-      <span className="px-2 text-gray-600">+91</span>
-      <input
-        type="tel"
-        placeholder="Enter 10-digit mobile number"
-        maxLength={10}
-        value={mobile}
-        onChange={(e) => {
-          let val = e.target.value.replace(/\D/g, '').slice(0, 10);
-          setMobile(val);
-          setError('');
-        }}
-        className="flex-1 p-2 border-none outline-none"
-      />
-    </div>
-    <button
-      onClick={sendForgotPasswordOtp}
-      className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
-    >
-      Send OTP
-    </button>
-  </>
-)}
+        {step === 'forgot' && (
+          <>
+            <div className="flex items-center mb-3 border border-gray-300 rounded">
+              <span className="px-2 text-gray-600">+91</span>
+              <input
+                type="tel"
+                placeholder="Enter 10-digit mobile number"
+                maxLength={10}
+                value={mobile}
+                onChange={(e) => {
+                  let val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setMobile(val);
+                  setError('');
+                }}
+                className="flex-1 p-2 border-none outline-none"
+              />
+            </div>
+            <button onClick={sendForgotPasswordOtp} className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
+              Send OTP
+            </button>
+          </>
+        )}
 
         {/* FORGOT PASSWORD OTP VERIFY */}
         {step === 'forgot-otp' && (
           <>
-            <p className="mb-3 text-center">
-  Enter the 6-digit OTP sent to your mobile +91{mobile}</p>
+            <p className="mb-3 text-center">Enter the 6-digit OTP sent to your mobile +91{mobile}</p>
             <div className="flex justify-between mb-4 space-x-2">
               {otp.map((digit, i) => (
                 <input

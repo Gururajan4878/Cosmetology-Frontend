@@ -24,7 +24,7 @@ const BuySection = ({ isLoggedIn, userEmail, onLogout }) => {
       }
       idleTimerRef.current = setTimeout(() => {
         handleLogout();
-      }, 5 * 60 * 1000); // 5 minutes
+      }, 60 * 60 * 1000);  // 1 hour minutes
     };
 
     if (isLoggedIn) {
@@ -116,7 +116,6 @@ const BuySection = ({ isLoggedIn, userEmail, onLogout }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
     onLogout();
-    alert('You have been logged out due to inactivity.');
   };
 
   return (
