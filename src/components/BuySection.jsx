@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import api from '../utils/Api';
 import { FaPlayCircle, FaLock, FaSignOutAlt } from 'react-icons/fa';
 
 const BuySection = ({ isLoggedIn, userEmail, onLogout }) => {
   const [hasPaid, setHasPaid] = useState(false);
+  const idleTimerRef = useRef(null);
 
   const video = {
     id: '1',
@@ -14,6 +15,30 @@ const BuySection = ({ isLoggedIn, userEmail, onLogout }) => {
     vimeoEmbedSrc:
       "https://player.vimeo.com/video/1108798598?title=0&byline=0&portrait=0&badge=0&autopause=0",
   };
+
+  // Idle logout setup
+  useEffect(() => {
+    const resetTimer = () => {
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
+      idleTimerRef.current = setTimeout(() => {
+        handleLogout();
+      }, 5 * 60 * 1000); // 5 minutes
+    };
+
+    if (isLoggedIn) {
+      window.addEventListener('mousemove', resetTimer);
+      window.addEventListener('keydown', resetTimer);
+      resetTimer(); // start timer when mounted
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('keydown', resetTimer);
+      clearTimeout(idleTimerRef.current);
+    };
+  }, [isLoggedIn]);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -91,6 +116,7 @@ const BuySection = ({ isLoggedIn, userEmail, onLogout }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
     onLogout();
+    alert('You have been logged out due to inactivity.');
   };
 
   return (
