@@ -12,7 +12,14 @@ function AuthModal({ onClose, onLogin }) {
   const [otp, setOtp] = useState(['', '', '', '', '', '']); 
   const [error, setError] = useState('');
   const [resetToken, setResetToken] = useState(''); 
-  const [isLoading, setIsLoading] = React.useState(false);
+
+  // Loading states for async actions
+  const [isLoadingRegister, setIsLoadingRegister] = useState(false);
+  const [isLoadingLogin, setIsLoadingLogin] = useState(false);
+  const [isLoadingSendOtp, setIsLoadingSendOtp] = useState(false);
+  const [isLoadingVerifyOtp, setIsLoadingVerifyOtp] = useState(false);
+  const [isLoadingForgotVerifyOtp, setIsLoadingForgotVerifyOtp] = useState(false);
+  const [isLoadingResetPassword, setIsLoadingResetPassword] = useState(false);
 
   const isValidEmail = (email) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -99,101 +106,6 @@ function AuthModal({ onClose, onLogin }) {
     return true;
   };
 
-  const handleRegister = async () => {
-    if (!validateRegister()) return;
-    try {
-      setError('');
-      setIsLoading(true);
-      await api.post('/auth/register-initiate', { email, password, mobile: '+91' + mobile });
-      setIsLoading(false);
-      setStep('verify');
-    } catch (err) {
-      setIsLoading(false);
-      const msg = err.response?.data?.message || 'Registration failed';
-      setError(msg);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    try {
-      const otpCode = otp.join('');
-      const res = await api.post('/auth/verify-otp', { email, otp: otpCode });
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('userEmail', email);
-      onLogin(email, res.data.token);
-      onClose();
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Invalid OTP';
-      setError(msg);
-    }
-  };
-
-  const handleLogin = async () => {
-    if (!validateLogin()) return;
-    try {
-      setError('');
-      const idToSend = loginType === 'email' ? identifier : '+91' + identifier;
-      const res = await api.post('/auth/login', { identifier: idToSend, password });
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('userIdentifier', idToSend);
-      onLogin(idToSend, res.data.token);
-      onClose();
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Login failed';
-      setError(msg);
-    }
-  };
-
-  // Forgot password send OTP (only mobile)
-  const sendForgotPasswordOtp = async () => {
-    if (!validateForgot()) return;
-    try {
-      await api.post('/auth/forgot-password-phone', { mobile: '+91' + mobile });
-      alert('OTP sent to your mobile');
-      setStep('forgot-otp');
-      setOtp(['', '', '', '', '', '']);
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to send OTP';
-      setError(msg);
-    }
-  };
-
-  // Forgot password OTP verification (only mobile)
-  const handleForgotVerifyOtp = async () => {
-    try {
-      const otpCode = otp.join('');
-      const res = await api.post('/auth/forgot-verify-phone-otp', { mobile: '+91' + mobile, otp: otpCode });
-      setResetToken(res.data.resetToken);
-      setStep('reset-password');
-      setPassword('');
-      setError('');
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Invalid OTP';
-      setError(msg);
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!validateResetPassword()) return;
-    try {
-      setError('');
-      await api.post('/auth/reset-password', {
-        resetToken,
-        newPassword: password,
-      });
-      setStep('login');
-      setEmail('');
-      setPassword('');
-      setMobile('');
-      setOtp(['', '', '', '', '', '']);
-      setResetToken('');
-      setError('Password reset successful! Please login with new password.');
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to reset password';
-      setError(msg);
-    }
-  };
-
   const validateResetPassword = () => {
     if (!password.trim()) {
       setError('Password is required.');
@@ -211,6 +123,119 @@ function AuthModal({ onClose, onLogin }) {
     return true;
   };
 
+  const handleRegister = async () => {
+    if (!validateRegister()) return;
+    try {
+      setError('');
+      setIsLoadingRegister(true);
+      await api.post('/auth/register-initiate', { email, password, mobile: '+91' + mobile });
+      setStep('verify');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Registration failed';
+      setError(msg);
+    } finally {
+      setIsLoadingRegister(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!validateLogin()) return;
+    try {
+      setError('');
+      setIsLoadingLogin(true);
+      const idToSend = loginType === 'email' ? identifier : '+91' + identifier;
+      const res = await api.post('/auth/login', { identifier: idToSend, password });
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('userIdentifier', idToSend);
+      onLogin(idToSend, res.data.token);
+      onClose();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Login failed';
+      setError(msg);
+    } finally {
+      setIsLoadingLogin(false);
+    }
+  };
+
+  // Forgot password send OTP (only mobile)
+  const sendForgotPasswordOtp = async () => {
+    if (!validateForgot()) return;
+    try {
+      setError('');
+      setIsLoadingSendOtp(true);
+      await api.post('/auth/forgot-password-phone', { mobile: '+91' + mobile });
+      alert('OTP sent to your mobile');
+      setStep('forgot-otp');
+      setOtp(['', '', '', '', '', '']);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to send OTP';
+      setError(msg);
+    } finally {
+      setIsLoadingSendOtp(false);
+    }
+  };
+
+  // OTP verification after registration
+  const handleVerifyOtp = async () => {
+    try {
+      setError('');
+      setIsLoadingVerifyOtp(true);
+      const otpCode = otp.join('');
+      const res = await api.post('/auth/verify-otp', { email, otp: otpCode });
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('userEmail', email);
+      onLogin(email, res.data.token);
+      onClose();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Invalid OTP';
+      setError(msg);
+    } finally {
+      setIsLoadingVerifyOtp(false);
+    }
+  };
+
+  // Forgot password OTP verification (only mobile)
+  const handleForgotVerifyOtp = async () => {
+    try {
+      setError('');
+      setIsLoadingForgotVerifyOtp(true);
+      const otpCode = otp.join('');
+      const res = await api.post('/auth/forgot-verify-phone-otp', { mobile: '+91' + mobile, otp: otpCode });
+      setResetToken(res.data.resetToken);
+      setStep('reset-password');
+      setPassword('');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Invalid OTP';
+      setError(msg);
+    } finally {
+      setIsLoadingForgotVerifyOtp(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!validateResetPassword()) return;
+    try {
+      setError('');
+      setIsLoadingResetPassword(true);
+      await api.post('/auth/reset-password', {
+        resetToken,
+        newPassword: password,
+      });
+      setStep('login');
+      setEmail('');
+      setPassword('');
+      setMobile('');
+      setOtp(['', '', '', '', '', '']);
+      setResetToken('');
+      setError('Password reset successful! Please login with new password.');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to reset password';
+      setError(msg);
+    } finally {
+      setIsLoadingResetPassword(false);
+    }
+  };
+
   const handleOtpChange = (index, value) => {
     if (!/^\d?$/.test(value)) return;
     const newOtp = [...otp];
@@ -220,6 +245,32 @@ function AuthModal({ onClose, onLogin }) {
       document.getElementById(`otp-${index + 1}`)?.focus();
     }
   };
+
+  const LoadingSpinner = ({ text }) => (
+    <span className="flex items-center justify-center">
+      <svg
+        className="animate-spin h-5 w-5 mr-2 text-white"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        ></circle>
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v8H4z"
+        ></path>
+      </svg>
+      {text}
+    </span>
+  );
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -233,7 +284,9 @@ function AuthModal({ onClose, onLogin }) {
           {step === 'reset-password' && 'Reset Password'}
         </h2>
 
-        {error && <p className="text-red-500 text-sm text-center mb-3">{error}</p>}
+        {error && (
+          <p className="text-red-500 text-sm text-center mb-3">{error}</p>
+        )}
 
         {/* LOGIN */}
         {step === 'login' && (
@@ -245,7 +298,11 @@ function AuthModal({ onClose, onLogin }) {
                   name="loginType"
                   value="email"
                   checked={loginType === 'email'}
-                  onChange={() => { setLoginType('email'); setIdentifier(''); setError(''); }}
+                  onChange={() => {
+                    setLoginType('email');
+                    setIdentifier('');
+                    setError('');
+                  }}
                 />
                 <span className="ml-2">Email</span>
               </label>
@@ -255,14 +312,22 @@ function AuthModal({ onClose, onLogin }) {
                   name="loginType"
                   value="mobile"
                   checked={loginType === 'mobile'}
-                  onChange={() => { setLoginType('mobile'); setIdentifier(''); setError(''); }}
+                  onChange={() => {
+                    setLoginType('mobile');
+                    setIdentifier('');
+                    setError('');
+                  }}
                 />
                 <span className="ml-2">Mobile</span>
               </label>
             </div>
             <input
               type={loginType === 'email' ? 'email' : 'tel'}
-              placeholder={loginType === 'email' ? 'Enter email' : 'Enter 10-digit mobile number'}
+              placeholder={
+                loginType === 'email'
+                  ? 'Enter email'
+                  : 'Enter 10-digit mobile number'
+              }
               value={identifier}
               maxLength={loginType === 'mobile' ? 10 : undefined}
               onChange={(e) => {
@@ -277,21 +342,40 @@ function AuthModal({ onClose, onLogin }) {
               type="password"
               placeholder="Enter password"
               value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(''); }}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError('');
+              }}
               className="w-full p-2 mb-3 border border-gray-300 rounded"
             />
-            <button onClick={handleLogin} className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
-              Login
+            <button
+              onClick={handleLogin}
+              disabled={isLoadingLogin}
+              className={`w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 ${
+                isLoadingLogin ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              {isLoadingLogin ? <LoadingSpinner text="Logging in..." /> : 'Login'}
             </button>
             <div className="mt-4 flex justify-between text-sm text-blue-600">
               <button
-                onClick={() => { setStep('register'); setEmail(''); setPassword(''); setMobile(''); setError(''); }}
+                onClick={() => {
+                  setStep('register');
+                  setEmail('');
+                  setPassword('');
+                  setMobile('');
+                  setError('');
+                }}
                 className="underline"
               >
                 New User? Register
               </button>
               <button
-                onClick={() => { setStep('forgot'); setMobile(''); setError(''); }}
+                onClick={() => {
+                  setStep('forgot');
+                  setMobile('');
+                  setError('');
+                }}
                 className="underline"
               >
                 Forgot Password?
@@ -307,7 +391,10 @@ function AuthModal({ onClose, onLogin }) {
               type="email"
               placeholder="Enter email"
               value={email}
-              onChange={(e) => { setEmail(e.target.value); setError(''); }}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError('');
+              }}
               className="w-full p-2 mb-3 border border-gray-300 rounded"
             />
             <div className="flex items-center mb-3 border border-gray-300 rounded">
@@ -317,7 +404,11 @@ function AuthModal({ onClose, onLogin }) {
                 placeholder="Enter 10-digit mobile number"
                 maxLength={10}
                 value={mobile}
-                onChange={(e) => { let val = e.target.value.replace(/\D/g, '').slice(0, 10); setMobile(val); setError(''); }}
+                onChange={(e) => {
+                  let val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setMobile(val);
+                  setError('');
+                }}
                 className="flex-1 p-2 border-none outline-none"
               />
             </div>
@@ -325,30 +416,34 @@ function AuthModal({ onClose, onLogin }) {
               type="password"
               placeholder="Enter new password"
               value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(''); }}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError('');
+              }}
               className="w-full p-2 mb-3 border border-gray-300 rounded"
             />
             <input
               type="password"
               placeholder="Confirm password"
               value={confirmPassword}
-              onChange={(e) => { setconfirmPassword(e.target.value); setError(''); }}
+              onChange={(e) => {
+                setconfirmPassword(e.target.value);
+                setError('');
+              }}
               className="w-full p-2 mb-3 border border-gray-300 rounded"
             />
 
             <button
               onClick={handleRegister}
-              disabled={isLoading}
-              className={`w-full py-2 rounded text-white ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+              disabled={isLoadingRegister}
+              className={`w-full py-2 rounded text-white ${
+                isLoadingRegister
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-green-600 hover:bg-green-700'
+              }`}
             >
-              {isLoading ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                  </svg>
-                  Verifying...
-                </span>
+              {isLoadingRegister ? (
+                <LoadingSpinner text="Verifying..." />
               ) : (
                 'Register'
               )}
@@ -356,7 +451,12 @@ function AuthModal({ onClose, onLogin }) {
 
             <div className="mt-4 text-center text-sm text-blue-600">
               <button
-                onClick={() => { setStep('login'); setIdentifier(''); setPassword(''); setError(''); }}
+                onClick={() => {
+                  setStep('login');
+                  setIdentifier('');
+                  setPassword('');
+                  setError('');
+                }}
                 className="underline"
               >
                 Already have an account? Login
@@ -383,8 +483,18 @@ function AuthModal({ onClose, onLogin }) {
                 />
               ))}
             </div>
-            <button onClick={handleVerifyOtp} className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
-              Verify OTP
+            <button
+              onClick={handleVerifyOtp}
+              disabled={isLoadingVerifyOtp}
+              className={`w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 ${
+                isLoadingVerifyOtp ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              {isLoadingVerifyOtp ? (
+                <LoadingSpinner text="Verifying..." />
+              ) : (
+                'Verify OTP'
+              )}
             </button>
           </>
         )}
@@ -407,8 +517,18 @@ function AuthModal({ onClose, onLogin }) {
                 className="flex-1 p-2 border-none outline-none"
               />
             </div>
-            <button onClick={sendForgotPasswordOtp} className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-              Send OTP
+            <button
+              onClick={sendForgotPasswordOtp}
+              disabled={isLoadingSendOtp}
+              className={`w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 ${
+                isLoadingSendOtp ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              {isLoadingSendOtp ? (
+                <LoadingSpinner text="Sending..." />
+              ) : (
+                'Send OTP'
+              )}
             </button>
           </>
         )}
@@ -431,8 +551,18 @@ function AuthModal({ onClose, onLogin }) {
                 />
               ))}
             </div>
-            <button onClick={handleForgotVerifyOtp} className="w-full bg-yellow-600 text-white py-2 rounded hover:bg-yellow-700">
-              Verify OTP
+            <button
+              onClick={handleForgotVerifyOtp}
+              disabled={isLoadingForgotVerifyOtp}
+              className={`w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 ${
+                isLoadingForgotVerifyOtp ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              {isLoadingForgotVerifyOtp ? (
+                <LoadingSpinner text="Verifying..." />
+              ) : (
+                'Verify OTP'
+              )}
             </button>
           </>
         )}
@@ -444,20 +574,34 @@ function AuthModal({ onClose, onLogin }) {
               type="password"
               placeholder="Enter new password"
               value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(''); }}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError('');
+              }}
               className="w-full p-2 mb-3 border border-gray-300 rounded"
             />
-            <button onClick={handleResetPassword} className="w-full bg-yellow-600 text-white py-2 rounded hover:bg-yellow-700">
-              Reset Password
+            <button
+              onClick={handleResetPassword}
+              disabled={isLoadingResetPassword}
+              className={`w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 ${
+                isLoadingResetPassword ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              {isLoadingResetPassword ? (
+                <LoadingSpinner text="Resetting..." />
+              ) : (
+                'Reset Password'
+              )}
             </button>
           </>
         )}
 
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 font-bold"
+          className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+          aria-label="Close modal"
         >
-          ×
+          &#10005;
         </button>
       </div>
     </div>
