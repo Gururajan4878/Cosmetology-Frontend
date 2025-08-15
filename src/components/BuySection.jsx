@@ -183,7 +183,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
                 />
                 <div className="p-2">
                   <p className="text-gray-800 text-sm font-semibold">{video.title}</p>
-                  <p className="text-gray-500 text-xs">{video.price} ₹</p>
+                  {/* Price removed from sidebar */}
                 </div>
               </div>
             ))}
