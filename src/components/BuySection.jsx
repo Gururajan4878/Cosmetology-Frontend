@@ -4,8 +4,8 @@ import { FaPlayCircle, FaLock, FaSignOutAlt, FaBars, FaTimes } from "react-icons
 
 const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
   const [hasPaid, setHasPaid] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768); // default open on desktop
-  const [mainVideoVisible, setMainVideoVisible] = useState(true); // control main video
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768); // open by default on desktop
+  const [mainVideoVisible, setMainVideoVisible] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState(null);
 
   const videos = [
@@ -22,17 +22,15 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
     // add more videos here
   ];
 
-  // Fetch payment status
   useEffect(() => {
     if (!selectedVideo) return;
     const fetchStatus = async () => {
       const token = localStorage.getItem("token");
       if (!token) return;
       try {
-        const res = await api.get(
-          `/api/payment/status?videoId=${selectedVideo.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const res = await api.get(`/api/payment/status?videoId=${selectedVideo.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setHasPaid(res.data.hasPaid);
       } catch (err) {
         console.error("Failed to fetch payment status:", err);
@@ -41,7 +39,6 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
     if (isLoggedIn && (userEmail || userMobile)) fetchStatus();
   }, [selectedVideo, isLoggedIn, userEmail, userMobile]);
 
-  // Handle payment
   const handleBuy = async () => {
     if (!selectedVideo) return;
     const token = localStorage.getItem("token");
@@ -95,13 +92,12 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
     onLogout();
   };
 
-  // Handle toggle button click
   const handleToggle = () => {
     if (window.innerWidth >= 768) {
       // Desktop: toggle main video
       setMainVideoVisible(!mainVideoVisible);
     } else {
-      // Mobile: toggle sidebar
+      // Mobile: toggle sidebar only
       setSidebarOpen(!sidebarOpen);
     }
   };
@@ -109,14 +105,14 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Top Bar */}
-      <div className="bg-white shadow-md py-4 px-4 flex items-center justify-between">
+      <div className="bg-white shadow-md py-4 px-4 flex items-center justify-between flex-wrap">
         <div className="flex items-center gap-4">
           {/* Toggle Button */}
           <button
             onClick={handleToggle}
             className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 transition duration-200"
           >
-            {(window.innerWidth >= 768 ? mainVideoVisible : sidebarOpen) ? <FaTimes /> : <FaBars />}
+            {window.innerWidth >= 768 ? (mainVideoVisible ? <FaTimes /> : <FaBars />) : sidebarOpen ? <FaTimes /> : <FaBars />}
           </button>
 
           {/* Title */}
@@ -124,7 +120,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
             className="text-xl font-bold text-gray-800 cursor-pointer"
             onClick={() => {
               setSelectedVideo(null);
-              setSidebarOpen(true);
+              setSidebarOpen(window.innerWidth >= 768);
               setMainVideoVisible(true);
             }}
           >
@@ -132,8 +128,9 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
           </h1>
         </div>
 
+        {/* User Info & Logout */}
         {isLoggedIn && (
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4 mt-2 md:mt-0">
             <div className="text-gray-700 text-sm flex flex-col">
               <span>{userEmail}</span>
               <span>{userMobile}</span>
@@ -150,7 +147,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Video List Sidebar */}
+        {/* Sidebar */}
         {sidebarOpen && (
           <div className="md:col-span-1 flex flex-col gap-4">
             {videos.map((video) => (
@@ -158,8 +155,8 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
                 key={video.id}
                 onClick={() => {
                   setSelectedVideo(video);
-                  setMainVideoVisible(true); // show main video when selecting
-                  if (window.innerWidth < 768) setSidebarOpen(false); // close on mobile
+                  setMainVideoVisible(true);
+                  if (window.innerWidth < 768) setSidebarOpen(false);
                   setHasPaid(false);
                 }}
                 className={`cursor-pointer rounded-md shadow-md overflow-hidden border ${
