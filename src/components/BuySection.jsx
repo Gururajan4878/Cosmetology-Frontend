@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import api from "../utils/Api";
 import { FaPlayCircle, FaLock, FaSignOutAlt, FaBars, FaTimes } from "react-icons/fa";
 import { Player, BigPlayButton } from "video-react";
-import "video-react/dist/video-react.css"; // import video-react styles
+import "video-react/dist/video-react.css";
 
 const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
   const [hasPaid, setHasPaid] = useState(false);
@@ -19,7 +19,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
       cloudinaryUrl:
         "https://res.cloudinary.com/da1zjccsw/video/upload/v1755242974/GlowUpwith_sylfws.mp4",
     },
-    // Add more videos here in the future
+    // Add more videos here
   ];
 
   const [currentVideo, setCurrentVideo] = useState(videos[0]);
@@ -31,9 +31,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
       try {
         const res = await api.get(
           `/api/payment/status?videoId=${currentVideo.id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         setHasPaid(res.data.hasPaid);
       } catch (err) {
@@ -81,9 +79,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
       };
 
       const rzp = new window.Razorpay(options);
-      rzp.on("payment.failed", () =>
-        alert("Payment failed. Please try again.")
-      );
+      rzp.on("payment.failed", () => alert("Payment failed. Please try again."));
       rzp.open();
     } catch {
       alert("Something went wrong while initiating payment.");
@@ -99,23 +95,25 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Top Bar */}
-      <div className="bg-white shadow-md py-4 px-6 flex items-center justify-between">
+      {/* Header */}
+      <div className="bg-white shadow-md py-4 px-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
+          {/* Toggle Button */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 transition duration-200"
+            className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 block md:hidden"
           >
             {sidebarOpen ? <FaTimes /> : <FaBars />}
           </button>
-          <h1 className="text-xl font-bold text-gray-800">Learn Cosmetology</h1>
+          {/* Title */}
+          <h1 className="text-xl font-bold text-gray-800">LearnCosmetology</h1>
         </div>
 
         {isLoggedIn && (
           <div className="flex items-center gap-4">
             <div className="text-gray-700 text-sm flex flex-col text-right">
-              <span>{userEmail}</span>
-              <span>{userMobile}</span>
+              {userEmail && <span>{userEmail}</span>}
+              {userMobile && <span>{userMobile}</span>}
             </div>
             <button
               onClick={handleLogout}
@@ -129,7 +127,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Video List */}
+        {/* Video list */}
         {sidebarOpen && (
           <div className="md:col-span-1 flex flex-col gap-4">
             {videos.map((video) => (
@@ -165,7 +163,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
         <div className={sidebarOpen ? "md:col-span-3" : "md:col-span-4"}>
           <div className="bg-white rounded-lg shadow-md p-4">
             {hasPaid ? (
-              <Player fluid={true} playsInline>
+              <Player fluid={false} width="100%" height={400}>
                 <source src={currentVideo.cloudinaryUrl} />
                 <BigPlayButton position="center" />
               </Player>
@@ -185,6 +183,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
                 </div>
               </div>
             )}
+
             <div className="mt-4">
               <h2 className="text-gray-900 font-semibold text-lg">
                 {currentVideo.title}
