@@ -4,8 +4,8 @@ import { FaPlayCircle, FaLock, FaSignOutAlt, FaBars, FaTimes } from "react-icons
 
 const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
   const [hasPaid, setHasPaid] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false); // sidebar hidden initially
-  const [selectedVideo, setSelectedVideo] = useState(null); // null = welcome page
+  const [sidebarOpen, setSidebarOpen] = useState(true); // default open on desktop
+  const [selectedVideo, setSelectedVideo] = useState(null);
 
   const videos = [
     {
@@ -18,10 +18,9 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
       cloudinaryUrl:
         "https://res.cloudinary.com/da1zjccsw/video/upload/v1755242974/GlowUpwith_sylfws.mp4",
     },
-    // Add more videos here
+    // add more videos
   ];
 
-  // Fetch payment status for selected video
   useEffect(() => {
     if (!selectedVideo) return;
     const fetchStatus = async () => {
@@ -40,7 +39,6 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
     if (isLoggedIn && (userEmail || userMobile)) fetchStatus();
   }, [selectedVideo, isLoggedIn, userEmail, userMobile]);
 
-  // Handle payment
   const handleBuy = async () => {
     if (!selectedVideo) return;
     const token = localStorage.getItem("token");
@@ -99,19 +97,20 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
       {/* Top Bar */}
       <div className="bg-white shadow-md py-4 px-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          {/* Toggle Button */}
+          {/* Toggle Button (desktop + mobile) */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 transition duration-200"
           >
             {sidebarOpen ? <FaTimes /> : <FaBars />}
           </button>
-          {/* Title - Clickable */}
+
+          {/* Title */}
           <h1
             className="text-xl font-bold text-gray-800 cursor-pointer"
             onClick={() => {
-              setSelectedVideo(null); // reset to welcome page
-              setSidebarOpen(false); // hide sidebar
+              setSelectedVideo(null);
+              setSidebarOpen(true);
             }}
           >
             LearnCosmetology
@@ -136,7 +135,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Video List Sidebar */}
+        {/* Sidebar */}
         {sidebarOpen && (
           <div className="md:col-span-1 flex flex-col gap-4">
             {videos.map((video) => (
@@ -144,7 +143,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
                 key={video.id}
                 onClick={() => {
                   setSelectedVideo(video);
-                  setSidebarOpen(true);
+                  if (window.innerWidth < 768) setSidebarOpen(false);
                   setHasPaid(false);
                 }}
                 className={`cursor-pointer rounded-md shadow-md overflow-hidden border ${
@@ -167,8 +166,8 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
           </div>
         )}
 
-        {/* Main Video or Welcome Page */}
-        <div className={sidebarOpen ? "md:col-span-3" : "md:col-span-4"}>
+        {/* Main Video */}
+        <div className={`${sidebarOpen ? "md:col-span-3" : "md:col-span-4"} col-span-1`}>
           {!selectedVideo ? (
             <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-800 text-lg">
               Welcome to Cosmetology
