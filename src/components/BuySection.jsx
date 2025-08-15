@@ -1,186 +1,219 @@
-import React, { useEffect, useState, useRef } from 'react';
-import api from '../utils/Api';
-import { FaPlayCircle, FaLock, FaSignOutAlt } from 'react-icons/fa';
+import React, { useEffect, useState } from "react";
+import api from "../utils/Api";
+import { FaPlayCircle, FaLock, FaSignOutAlt, FaBars, FaTimes } from "react-icons/fa";
 
-const BuySection = ({ isLoggedIn, userEmail, onLogout }) => {
+const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
   const [hasPaid, setHasPaid] = useState(false);
-  const idleTimerRef = useRef(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const video = {
-    id: '1',
-    title: 'Bridal Makeup Course',
-    description: 'Glow Up with HydraFacial 💆‍♀️ | #hydrafacial | VJ Deepika',
-    preview: '/Videos/thumb3.jpg',
-    price: 1,
-    vimeoEmbedSrc:
-      "https://player.vimeo.com/video/1108798598?title=0&byline=0&portrait=0&badge=0&autopause=0",
-  };
+  const videos = [
+    {
+      id: "1",
+      title: "Bridal Makeup Course",
+      description:
+        "Learn advanced bridal makeup techniques including HydraFacial glow treatments, perfect for special occasions.",
+      preview: "/Videos/thumb3.jpg",
+      price: 1,
+      cloudinaryUrl:
+        "https://res.cloudinary.com/da1zjccsw/video/upload/v1755242974/GlowUpwith_sylfws.mp4",
+    },
+  ];
 
-  // Idle logout setup
-  useEffect(() => {
-    const resetTimer = () => {
-      if (idleTimerRef.current) {
-        clearTimeout(idleTimerRef.current);
-      }
-      idleTimerRef.current = setTimeout(() => {
-        handleLogout();
-      }, 60 * 60 * 1000);  // 1 hour minutes
-    };
+  const [currentVideo, setCurrentVideo] = useState(videos[0]);
 
-    if (isLoggedIn) {
-      window.addEventListener('mousemove', resetTimer);
-      window.addEventListener('keydown', resetTimer);
-      resetTimer(); // start timer when mounted
-    }
-
-    return () => {
-      window.removeEventListener('mousemove', resetTimer);
-      window.removeEventListener('keydown', resetTimer);
-      clearTimeout(idleTimerRef.current);
-    };
-  }, [isLoggedIn]);
-
+  // Fetch payment status
   useEffect(() => {
     const fetchStatus = async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) return;
-
       try {
-        const res = await api.get(`/api/payment/status?videoId=${video.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await api.get(
+          `/api/payment/status?videoId=${currentVideo.id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         setHasPaid(res.data.hasPaid);
       } catch (err) {
-        console.error('Failed to fetch payment status:', err);
+        console.error("Failed to fetch payment status:", err);
       }
     };
+    if (isLoggedIn && (userEmail || userMobile)) fetchStatus();
+  }, [isLoggedIn, userEmail, userMobile, currentVideo]);
 
-    if (isLoggedIn && userEmail) {
-      fetchStatus();
-    }
-  }, [isLoggedIn, userEmail]);
-
+  // Handle payment
   const handleBuy = async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      alert('Please login first');
+      alert("Please login first");
       return;
     }
-
     try {
       const res = await api.post(
-        '/api/payment/create-order',
-        { amount: video.price, videoId: video.id },
+        "/api/payment/create-order",
+        { amount: currentVideo.price, videoId: currentVideo.id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const options = {
         key: res.data.key,
         amount: res.data.amount * 100,
-        currency: 'INR',
-        name: 'Cosmetology Course',
-        description: video.title,
+        currency: "INR",
+        name: "Cosmetology Course",
+        description: currentVideo.title,
         order_id: res.data.orderId,
         handler: async function (response) {
           await api.post(
-            '/api/payment/verify',
+            "/api/payment/verify",
             {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
-              videoId: video.id,
+              videoId: currentVideo.id,
             },
             { headers: { Authorization: `Bearer ${token}` } }
           );
-          alert('Payment successful!');
+          alert("Payment successful!");
           setHasPaid(true);
         },
-        theme: {
-          color: '#EC4899',
-        },
+        theme: { color: "#2563eb" },
       };
 
       const rzp = new window.Razorpay(options);
-
-      rzp.on('payment.failed', function () {
-        alert('Payment failed. Please try again.');
-      });
-
+      rzp.on("payment.failed", () =>
+        alert("Payment failed. Please try again.")
+      );
       rzp.open();
-    } catch (err) {
-      alert('Something went wrong while initiating payment.');
+    } catch {
+      alert("Something went wrong while initiating payment.");
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userEmail');
+    localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userMobile");
     onLogout();
   };
 
   return (
-    <div className="flex flex-col items-center px-4 py-10">
-      <div className="max-w-4xl w-full bg-white/10 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-white/20">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl md:text-3xl font-bold text-white drop-shadow-md">
-            {video.title}
-          </h2>
+    <div className="bg-gray-50 min-h-screen">
+      {/* Top Bar */}
+      <div className="bg-white shadow-md py-4 px-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {/* Sidebar toggle before title */}
           <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 bg-red-500/80 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center justify-center text-gray-800"
           >
-            <FaSignOutAlt /> Logout
+            {sidebarOpen ? <FaTimes /> : <FaBars />}
           </button>
+
+          <h1 className="text-xl font-bold text-gray-800">Learn Cosmetology</h1>
         </div>
 
-        {/* Video Section */}
-        {hasPaid ? (
-          <div className="flex justify-center">
-            <iframe
-              src={video.vimeoEmbedSrc}
-              width="100%"
-              height="480"
-              frameBorder="0"
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-              title={video.title}
-              className="rounded-xl shadow-lg"
-              style={{ maxWidth: '900px' }}
-            ></iframe>
-          </div>
-        ) : (
-          <div className="relative group w-full flex flex-col items-center text-center space-y-4">
-            <img
-              src={video.preview}
-              alt="Video Preview"
-              className="object-cover rounded-xl shadow-lg border border-white/20 w-full max-w-3xl"
-            />
-            <div className="absolute inset-0 flex flex-col justify-center items-center bg-black/50 opacity-0 group-hover:opacity-100 transition">
-              <FaLock className="text-white text-5xl mb-2" />
-              <span className="text-white text-lg">Purchase to Unlock</span>
+        {isLoggedIn && (
+          <div className="flex items-center gap-4">
+            <div className="text-gray-700 text-sm flex flex-col items-end">
+              <span>{userEmail}</span>
+              <span>{userMobile}</span>
             </div>
-            <p className="text-white/90 text-lg max-w-2xl">{video.description}</p>
-          </div>
-        )}
-
-        {/* Buy Button */}
-        {!hasPaid && isLoggedIn && (
-          <div className="flex justify-center mt-6">
             <button
-              onClick={handleBuy}
-              className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-8 py-3 rounded-full shadow-lg hover:scale-105 hover:shadow-pink-500/50 transition transform text-lg font-semibold"
+              onClick={handleLogout}
+              className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md text-sm font-medium transition duration-200"
             >
-              <FaPlayCircle className="inline mr-2" /> Buy Now ₹{video.price}
+              <FaSignOutAlt /> Logout
             </button>
           </div>
         )}
+      </div>
 
-        {!isLoggedIn && (
-          <p className="mt-6 text-center text-white/80">
-            Please login to purchase or watch the full video.
-          </p>
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Video list */}
+        {sidebarOpen && (
+          <div className="md:col-span-1 flex flex-col gap-4">
+            {videos.map((video) => (
+              <div
+                key={video.id}
+                onClick={() => {
+                  setCurrentVideo(video);
+                  setHasPaid(false);
+                }}
+                className={`cursor-pointer rounded-md shadow-md overflow-hidden border ${
+                  currentVideo.id === video.id
+                    ? "border-blue-500"
+                    : "border-gray-200"
+                } hover:shadow-lg transition duration-200`}
+              >
+                <img
+                  src={video.preview}
+                  alt={video.title}
+                  className="w-full h-24 object-cover"
+                />
+                <div className="p-2">
+                  <p className="text-gray-800 text-sm font-semibold">
+                    {video.title}
+                  </p>
+                  <p className="text-gray-500 text-xs">{video.price} ₹</p>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
+
+        {/* Video player + details */}
+        <div className={sidebarOpen ? "md:col-span-3" : "md:col-span-4"}>
+          <div className="bg-white rounded-lg shadow-md p-4">
+            {hasPaid ? (
+              <video
+                src={currentVideo.cloudinaryUrl}
+                controls
+                controlsList="nodownload noremoteplayback"
+                disablePictureInPicture
+                className="w-full rounded-md"
+                style={{ maxHeight: "500px", objectFit: "contain" }}
+              />
+            ) : (
+              <div className="flex flex-col items-center">
+                <img
+                  src={currentVideo.preview}
+                  alt={currentVideo.title}
+                  className="object-cover rounded-md shadow-md max-w-full"
+                  style={{ maxHeight: "300px" }}
+                />
+                <div className="mt-3 flex flex-col items-center">
+                  <FaLock className="text-gray-500 text-4xl mb-2" />
+                  <span className="text-gray-600 text-sm">
+                    Purchase to unlock this video
+                  </span>
+                </div>
+              </div>
+            )}
+            <div className="mt-4">
+              <h2 className="text-gray-900 font-semibold text-lg">
+                {currentVideo.title}
+              </h2>
+              <p className="text-gray-700 text-sm mt-1">
+                {currentVideo.description}
+              </p>
+
+              {!hasPaid && isLoggedIn && (
+                <button
+                  onClick={handleBuy}
+                  className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-semibold transition duration-200"
+                >
+                  <FaPlayCircle className="inline mr-2" /> Buy Now ₹
+                  {currentVideo.price}
+                </button>
+              )}
+
+              {!isLoggedIn && (
+                <p className="mt-4 text-gray-600 text-sm">
+                  Please login to purchase or watch the full video.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
