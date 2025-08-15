@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import api from "../utils/Api";
 import { FaPlayCircle, FaLock, FaSignOutAlt, FaBars, FaTimes } from "react-icons/fa";
+import { Player, BigPlayButton } from "video-react";
+import "video-react/dist/video-react.css"; // import video-react styles
 
 const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
   const [hasPaid, setHasPaid] = useState(false);
@@ -17,11 +19,11 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
       cloudinaryUrl:
         "https://res.cloudinary.com/da1zjccsw/video/upload/v1755242974/GlowUpwith_sylfws.mp4",
     },
+    // Add more videos here in the future
   ];
 
   const [currentVideo, setCurrentVideo] = useState(videos[0]);
 
-  // Fetch payment status
   useEffect(() => {
     const fetchStatus = async () => {
       const token = localStorage.getItem("token");
@@ -29,7 +31,9 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
       try {
         const res = await api.get(
           `/api/payment/status?videoId=${currentVideo.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
         setHasPaid(res.data.hasPaid);
       } catch (err) {
@@ -39,7 +43,6 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
     if (isLoggedIn && (userEmail || userMobile)) fetchStatus();
   }, [isLoggedIn, userEmail, userMobile, currentVideo]);
 
-  // Handle payment
   const handleBuy = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -98,21 +101,19 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
     <div className="bg-gray-50 min-h-screen">
       {/* Top Bar */}
       <div className="bg-white shadow-md py-4 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {/* Sidebar toggle before title */}
+        <div className="flex items-center gap-4">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center justify-center text-gray-800"
+            className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 transition duration-200"
           >
             {sidebarOpen ? <FaTimes /> : <FaBars />}
           </button>
-
           <h1 className="text-xl font-bold text-gray-800">Learn Cosmetology</h1>
         </div>
 
         {isLoggedIn && (
           <div className="flex items-center gap-4">
-            <div className="text-gray-700 text-sm flex flex-col items-end">
+            <div className="text-gray-700 text-sm flex flex-col text-right">
               <span>{userEmail}</span>
               <span>{userMobile}</span>
             </div>
@@ -128,7 +129,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Video list */}
+        {/* Video List */}
         {sidebarOpen && (
           <div className="md:col-span-1 flex flex-col gap-4">
             {videos.map((video) => (
@@ -160,18 +161,14 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
           </div>
         )}
 
-        {/* Video player + details */}
+        {/* Video Player + Details */}
         <div className={sidebarOpen ? "md:col-span-3" : "md:col-span-4"}>
           <div className="bg-white rounded-lg shadow-md p-4">
             {hasPaid ? (
-              <video
-                src={currentVideo.cloudinaryUrl}
-                controls
-                controlsList="nodownload noremoteplayback"
-                disablePictureInPicture
-                className="w-full rounded-md"
-                style={{ maxHeight: "500px", objectFit: "contain" }}
-              />
+              <Player fluid={true} playsInline>
+                <source src={currentVideo.cloudinaryUrl} />
+                <BigPlayButton position="center" />
+              </Player>
             ) : (
               <div className="flex flex-col items-center">
                 <img
