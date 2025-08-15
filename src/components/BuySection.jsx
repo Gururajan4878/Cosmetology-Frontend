@@ -4,8 +4,8 @@ import { FaPlayCircle, FaLock, FaSignOutAlt, FaBars, FaTimes } from "react-icons
 
 const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
   const [hasPaid, setHasPaid] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768); // open by default on desktop
-  const [mainVideoVisible, setMainVideoVisible] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768); // desktop open by default
+  const [mainVideoVisible, setMainVideoVisible] = useState(window.innerWidth >= 768); // desktop shows main video by default
   const [selectedVideo, setSelectedVideo] = useState(null);
 
   const videos = [
@@ -19,9 +19,10 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
       cloudinaryUrl:
         "https://res.cloudinary.com/da1zjccsw/video/upload/v1755242974/GlowUpwith_sylfws.mp4",
     },
-    // add more videos here
+    // add more videos
   ];
 
+  // Fetch payment status
   useEffect(() => {
     if (!selectedVideo) return;
     const fetchStatus = async () => {
@@ -39,6 +40,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
     if (isLoggedIn && (userEmail || userMobile)) fetchStatus();
   }, [selectedVideo, isLoggedIn, userEmail, userMobile]);
 
+  // Handle payment
   const handleBuy = async () => {
     if (!selectedVideo) return;
     const token = localStorage.getItem("token");
@@ -92,13 +94,15 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
     onLogout();
   };
 
+  // Toggle button behavior
   const handleToggle = () => {
     if (window.innerWidth >= 768) {
       // Desktop: toggle main video
       setMainVideoVisible(!mainVideoVisible);
     } else {
-      // Mobile: toggle sidebar only
+      // Mobile: toggle sidebar only, hide main video
       setSidebarOpen(!sidebarOpen);
+      setMainVideoVisible(false);
     }
   };
 
@@ -107,21 +111,30 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
       {/* Top Bar */}
       <div className="bg-white shadow-md py-4 px-4 flex items-center justify-between flex-wrap">
         <div className="flex items-center gap-4">
-          {/* Toggle Button */}
           <button
             onClick={handleToggle}
             className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 transition duration-200"
           >
-            {window.innerWidth >= 768 ? (mainVideoVisible ? <FaTimes /> : <FaBars />) : sidebarOpen ? <FaTimes /> : <FaBars />}
+            {window.innerWidth >= 768
+              ? mainVideoVisible
+                ? <FaTimes />
+                : <FaBars />
+              : sidebarOpen
+                ? <FaTimes />
+                : <FaBars />}
           </button>
 
-          {/* Title */}
           <h1
             className="text-xl font-bold text-gray-800 cursor-pointer"
             onClick={() => {
               setSelectedVideo(null);
-              setSidebarOpen(window.innerWidth >= 768);
-              setMainVideoVisible(true);
+              if (window.innerWidth >= 768) {
+                setSidebarOpen(true);
+                setMainVideoVisible(true);
+              } else {
+                setSidebarOpen(false);
+                setMainVideoVisible(false);
+              }
             }}
           >
             LearnCosmetology
