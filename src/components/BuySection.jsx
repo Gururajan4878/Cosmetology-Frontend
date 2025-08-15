@@ -4,7 +4,8 @@ import { FaPlayCircle, FaLock, FaSignOutAlt, FaBars, FaTimes } from "react-icons
 
 const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
   const [hasPaid, setHasPaid] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true); // default open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768); // default open on desktop
+  const [mainVideoVisible, setMainVideoVisible] = useState(true); // control main video
   const [selectedVideo, setSelectedVideo] = useState(null);
 
   const videos = [
@@ -18,9 +19,10 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
       cloudinaryUrl:
         "https://res.cloudinary.com/da1zjccsw/video/upload/v1755242974/GlowUpwith_sylfws.mp4",
     },
-    // add more videos
+    // add more videos here
   ];
 
+  // Fetch payment status
   useEffect(() => {
     if (!selectedVideo) return;
     const fetchStatus = async () => {
@@ -39,6 +41,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
     if (isLoggedIn && (userEmail || userMobile)) fetchStatus();
   }, [selectedVideo, isLoggedIn, userEmail, userMobile]);
 
+  // Handle payment
   const handleBuy = async () => {
     if (!selectedVideo) return;
     const token = localStorage.getItem("token");
@@ -92,17 +95,28 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
     onLogout();
   };
 
+  // Handle toggle button click
+  const handleToggle = () => {
+    if (window.innerWidth >= 768) {
+      // Desktop: toggle main video
+      setMainVideoVisible(!mainVideoVisible);
+    } else {
+      // Mobile: toggle sidebar
+      setSidebarOpen(!sidebarOpen);
+    }
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Top Bar */}
       <div className="bg-white shadow-md py-4 px-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          {/* Toggle Button (desktop + mobile) */}
+          {/* Toggle Button */}
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={handleToggle}
             className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 transition duration-200"
           >
-            {sidebarOpen ? <FaTimes /> : <FaBars />}
+            {(window.innerWidth >= 768 ? mainVideoVisible : sidebarOpen) ? <FaTimes /> : <FaBars />}
           </button>
 
           {/* Title */}
@@ -111,6 +125,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
             onClick={() => {
               setSelectedVideo(null);
               setSidebarOpen(true);
+              setMainVideoVisible(true);
             }}
           >
             LearnCosmetology
@@ -135,7 +150,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Sidebar */}
+        {/* Video List Sidebar */}
         {sidebarOpen && (
           <div className="md:col-span-1 flex flex-col gap-4">
             {videos.map((video) => (
@@ -143,13 +158,12 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
                 key={video.id}
                 onClick={() => {
                   setSelectedVideo(video);
-                  if (window.innerWidth < 768) setSidebarOpen(false);
+                  setMainVideoVisible(true); // show main video when selecting
+                  if (window.innerWidth < 768) setSidebarOpen(false); // close on mobile
                   setHasPaid(false);
                 }}
                 className={`cursor-pointer rounded-md shadow-md overflow-hidden border ${
-                  selectedVideo?.id === video.id
-                    ? "border-blue-500"
-                    : "border-gray-200"
+                  selectedVideo?.id === video.id ? "border-blue-500" : "border-gray-200"
                 } hover:shadow-lg transition duration-200`}
               >
                 <img
@@ -167,48 +181,50 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
         )}
 
         {/* Main Video */}
-        <div className={`${sidebarOpen ? "md:col-span-3" : "md:col-span-4"} col-span-1`}>
-          {!selectedVideo ? (
-            <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-800 text-lg">
-              Welcome to Cosmetology
-            </div>
-          ) : hasPaid ? (
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <video
-                src={selectedVideo.cloudinaryUrl}
-                controls
-                controlsList="nodownload noremoteplayback"
-                disablePictureInPicture
-                className="w-full rounded-md"
-                style={{ maxHeight: "500px", objectFit: "contain" }}
-              />
-              <h2 className="text-gray-900 font-semibold text-lg mt-4">{selectedVideo.title}</h2>
-              <p className="text-gray-700 text-sm mt-1">{selectedVideo.description}</p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center">
-              <img
-                src={selectedVideo.preview}
-                alt={selectedVideo.title}
-                className="object-cover rounded-md shadow-md max-w-full"
-                style={{ maxHeight: "300px" }}
-              />
-              <FaLock className="text-gray-500 text-4xl my-2" />
-              <p className="text-gray-600 text-sm">Purchase to unlock this video</p>
-              {isLoggedIn && (
-                <button
-                  onClick={handleBuy}
-                  className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-semibold transition duration-200"
-                >
-                  <FaPlayCircle className="inline mr-2" /> Buy Now ₹{selectedVideo.price}
-                </button>
-              )}
-              {!isLoggedIn && (
-                <p className="mt-2 text-gray-600 text-sm">Please login to purchase or watch full video.</p>
-              )}
-            </div>
-          )}
-        </div>
+        {mainVideoVisible && (
+          <div className={`${sidebarOpen ? "md:col-span-3" : "md:col-span-4"} col-span-1`}>
+            {!selectedVideo ? (
+              <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-800 text-lg">
+                Welcome to Cosmetology
+              </div>
+            ) : hasPaid ? (
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <video
+                  src={selectedVideo.cloudinaryUrl}
+                  controls
+                  controlsList="nodownload noremoteplayback"
+                  disablePictureInPicture
+                  className="w-full rounded-md"
+                  style={{ maxHeight: "500px", objectFit: "contain" }}
+                />
+                <h2 className="text-gray-900 font-semibold text-lg mt-4">{selectedVideo.title}</h2>
+                <p className="text-gray-700 text-sm mt-1">{selectedVideo.description}</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center">
+                <img
+                  src={selectedVideo.preview}
+                  alt={selectedVideo.title}
+                  className="object-cover rounded-md shadow-md max-w-full"
+                  style={{ maxHeight: "300px" }}
+                />
+                <FaLock className="text-gray-500 text-4xl my-2" />
+                <p className="text-gray-600 text-sm">Purchase to unlock this video</p>
+                {isLoggedIn && (
+                  <button
+                    onClick={handleBuy}
+                    className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-semibold transition duration-200"
+                  >
+                    <FaPlayCircle className="inline mr-2" /> Buy Now ₹{selectedVideo.price}
+                  </button>
+                )}
+                {!isLoggedIn && (
+                  <p className="mt-2 text-gray-600 text-sm">Please login to purchase or watch full video.</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
