@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import api from "../utils/Api";
 import { FaSignOutAlt } from "react-icons/fa";
-import VideoArea from "./VideoArea"; // ✅ Import VideoArea
+import VideoArea from "./VideoArea";
+
+const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes in ms
 
 const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
   const [hasPaid, setHasPaid] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const inactivityTimeout = useRef(null);
 
   const videos = [
     {
@@ -19,6 +22,48 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
         "https://res.cloudinary.com/da1zjccsw/video/upload/v1755242974/GlowUpwith_sylfws.mp4",
     },
   ];
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userMobile");
+    onLogout();
+  };
+
+  const resetInactivityTimeout = () => {
+    if (inactivityTimeout.current) clearTimeout(inactivityTimeout.current);
+    inactivityTimeout.current = setTimeout(() => {
+      alert("Logged out due to inactivity or tab switch!");
+      handleLogout();
+    }, INACTIVITY_LIMIT);
+  };
+
+  // Detect inactivity and tab switching
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const events = ["mousemove", "keydown", "scroll", "click"];
+    events.forEach((e) => window.addEventListener(e, resetInactivityTimeout));
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // immediately logout if tab inactive
+        alert("Logged out due to tab switching!");
+        handleLogout();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // start timeout on mount
+    resetInactivityTimeout();
+
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, resetInactivityTimeout));
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (inactivityTimeout.current) clearTimeout(inactivityTimeout.current);
+    };
+  }, [isLoggedIn]);
 
   // fetch payment status
   useEffect(() => {
@@ -85,13 +130,6 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userMobile");
-    onLogout();
-  };
-
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
       {/* Top Bar */}
@@ -139,7 +177,7 @@ const BuySection = ({ isLoggedIn, userEmail, userMobile, onLogout }) => {
           ))}
         </div>
 
-        {/* Use VideoArea */}
+        {/* Video Area */}
         <VideoArea
           selectedVideo={selectedVideo}
           hasPaid={hasPaid}

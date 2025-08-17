@@ -2,7 +2,12 @@ import { FaWhatsapp, FaEnvelope, FaInstagram, FaTwitter } from "react-icons/fa";
 
 function Footer() {
   return (
-    <footer className="w-full mt-8 mb-4 flex justify-center">
+    <footer className="w-full mt-8 mb-4 flex flex-col items-center">
+      {/* Follow Us heading */}
+      <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-700 mb-2">
+        Follow Us
+      </h3>
+
       <div className="flex gap-2 sm:gap-3 md:gap-4 lg:gap-6">
         {/* WhatsApp */}
         <a

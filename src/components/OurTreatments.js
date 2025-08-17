@@ -7,8 +7,8 @@ import "slick-carousel/slick/slick-theme.css";
 function OurTreatments() {
   const settings = {
     dots: false,
-    infinite: true, // required for looping
-    speed: 4000,
+    infinite: true,
+    speed: 9000,
     slidesToShow: 2,
     slidesToScroll: 1,
     autoplay: true,
@@ -16,7 +16,7 @@ function OurTreatments() {
     cssEase: "linear",
     arrows: false,
     pauseOnHover: false,
-    swipe: false, // disable swipe for smooth rotation
+    swipe: false,
     responsive: [
       { breakpoint: 1024, settings: { slidesToShow: 2 } },
       { breakpoint: 640, settings: { slidesToShow: 1 } },
@@ -30,33 +30,35 @@ function OurTreatments() {
     { src: "/Images/anti-aging.jpg", alt: "Anti-Aging Therapy" },
   ];
 
-  // Duplicate list to make it seamless
   const loopedImages = [...treatmentImages, ...treatmentImages];
 
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-2xl mx-4 sm:mx-6 md:mx-20 my-8 p-4 sm:p-6 md:p-8 text-left">
-      <h3 className="text-sm sm:text-base md:text-xl font-bold mb-2 sm:mb-4 text-pink-300">
-        Our Treatments
-      </h3>
+    <div className="w-full bg-white/10 backdrop-blur-md py-8">
+      <div className="max-w-6xl mx-auto px-4 md:px-8">
+        {/* Heading */}
+        <h3 className="text-lg md:text-2xl font-bold mb-4 text-pink-300 text-left">
+          Our Treatments
+        </h3>
 
-      <ul className="list-disc pl-4 text-[10px] sm:text-xs md:text-sm space-y-1 text-white">
-        <li>Skin Rejuvenation</li>
-        <li>Dermal Fillers</li>
-        <li>Botox & Wrinkle Reduction</li>
-        <li>Anti-Aging Therapy</li>
-        <li>Acne & Scar Treatments</li>
-      </ul>
+        {/* List */}
+        <ul className="list-disc list-inside text-sm md:text-base space-y-1 text-white text-left mb-6">
+          <li>Skin Rejuvenation</li>
+          <li>Dermal Fillers</li>
+          <li>Botox & Wrinkle Reduction</li>
+          <li>Anti-Aging Therapy</li>
+          <li>Acne & Scar Treatments</li>
+        </ul>
 
-      <div className="mt-6">
+        {/* Slider */}
         <Slider {...settings}>
           {loopedImages.map((img, index) => (
             <div key={index} className="px-2">
               <img
                 src={img.src}
                 alt={img.alt}
-                className="rounded-xl shadow-lg w-full h-48 sm:h-64 object-cover"
+                className="rounded-xl shadow-lg w-full h-[300px] sm:h-[400px] md:h-[500px] object-cover"
               />
-              <p className="text-center text-xs sm:text-sm mt-2 text-white">
+              <p className="text-left text-sm md:text-base mt-2 text-white">
                 {img.alt}
               </p>
             </div>
